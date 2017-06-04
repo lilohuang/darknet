@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "activation_layer.h"
 #include "activations.h"
-#include "assert.h"
 #include "avgpool_layer.h"
 #include "batchnorm_layer.h"
 #include "blas.h"
@@ -258,6 +258,10 @@ softmax_layer parse_softmax(list *options, size_params params)
     layer.temperature = option_find_float_quiet(options, "temperature", 1);
     char *tree_file = option_find_str(options, "tree", 0);
     if (tree_file) layer.softmax_tree = read_tree(tree_file);
+    layer.w = params.w;
+    layer.h = params.h;
+    layer.c = params.c;
+    layer.spatial = option_find_float_quiet(options, "spatial", 0);
     return layer;
 }
 
@@ -274,6 +278,7 @@ layer parse_region(list *options, size_params params)
     l.sqrt = option_find_int_quiet(options, "sqrt", 0);
 
     l.softmax = option_find_int(options, "softmax", 0);
+    l.background = option_find_int_quiet(options, "background", 0);
     l.max_boxes = option_find_int_quiet(options, "max",30);
     l.jitter = option_find_float(options, "jitter", .2);
     l.rescore = option_find_int_quiet(options, "rescore",0);
@@ -755,7 +760,7 @@ list *read_cfg(char *filename)
     if(file == 0) file_error(filename);
     char *line;
     int nu = 0;
-    list *sections = make_list();
+    list *options = make_list();
     section *current = 0;
     while((line=fgetl(file)) != 0){
         ++ nu;
@@ -763,7 +768,7 @@ list *read_cfg(char *filename)
         switch(line[0]){
             case '[':
                 current = malloc(sizeof(section));
-                list_insert(sections, current);
+                list_insert(options, current);
                 current->options = make_list();
                 current->type = line;
                 break;
@@ -781,7 +786,7 @@ list *read_cfg(char *filename)
         }
     }
     fclose(file);
-    return sections;
+    return options;
 }
 
 void save_convolutional_weights_binary(layer l, FILE *fp)

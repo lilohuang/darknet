@@ -18,7 +18,7 @@ void copy_cpu(int N, float *X, int INCX, float *Y, int INCY);
 void scal_cpu(int N, float ALPHA, float *X, int INCX);
 void fill_cpu(int N, float ALPHA, float * X, int INCX);
 float dot_cpu(int N, float *X, int INCX, float *Y, int INCY);
-void test_gpu_blas();
+int test_gpu_blas();
 void shortcut_cpu(int batch, int w1, int h1, int c1, float *add, int w2, int h2, int c2, float *out);
 
 void mean_cpu(float *x, int batch, int filters, int spatial, float *mean);
@@ -41,6 +41,7 @@ void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, i
 
 #ifdef GPU
 #include "cuda.h"
+#include "tree.h"
 
 void axpy_ongpu(int N, float ALPHA, float * X, int INCX, float * Y, int INCY);
 void axpy_ongpu_offset(int N, float ALPHA, float * X, int OFFX, int INCX, float * Y, int OFFY, int INCY);
@@ -86,6 +87,7 @@ void softmax_gpu(float *input, int n, int batch, int batch_offset, int groups, i
 void adam_gpu(int n, float *x, float *m, float *v, float B1, float B2, float rate, float eps, int t);
 
 void flatten_ongpu(float *x, int spatial, int layers, int batch, int forward, float *out);
+void softmax_tree(float *input, int spatial, int batch, int stride, float temp, float *output, tree hier);
 
 #endif
 #endif

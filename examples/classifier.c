@@ -1,12 +1,7 @@
-#include "network.h"
-#include "utils.h"
-#include "parser.h"
-#include "option_list.h"
-#include "blas.h"
-#include "assert.h"
-#include "classifier.h"
-#include "cuda.h"
+#include "darknet.h"
+
 #include <sys/time.h>
+#include <assert.h>
 
 float *get_regression_values(char **labels, int n)
 {
@@ -37,11 +32,7 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 #ifdef GPU
         cuda_set_device(gpus[i]);
 #endif
-        nets[i] = parse_network_cfg(cfgfile);
-        if(weightfile){
-            load_weights(&nets[i], weightfile);
-        }
-        if(clear) *nets[i].seen = 0;
+        nets[i] = load_network(cfgfile, weightfile, clear);
         nets[i].learning_rate *= ngpus;
     }
     srand(time(0));
@@ -698,9 +689,9 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
         float *X = r.data;
         time=clock();
         float *predictions = network_predict(net, X);
-        if(net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy, 0, 1);
+        if(net.hierarchy) hierarchy_predictions(predictions, net.outputs, net.hierarchy, 1, 1);
         top_k(predictions, net.outputs, top, indexes);
-        printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
+        fprintf(stderr, "%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         for(i = 0; i < top; ++i){
             int index = indexes[i];
             //if(net.hierarchy) printf("%d, %s: %f, parent: %s \n",index, names[index], predictions[index], (net.hierarchy->parent[index] >= 0) ? names[net.hierarchy->parent[index]] : "Root");
